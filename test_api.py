@@ -1,7 +1,7 @@
 import requests
 import sys
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = "http://127.0.0.1:8080"
 
 def test_api():
     print("=== PENGUJIAN API TOBAGUIDE-BACKEND ===")
