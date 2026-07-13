@@ -34,9 +34,9 @@ def generate_tourist_response(user_query: str, fair_route_data: dict) -> str:
     3. Jangan memberikan koordinat secara mentah, cukup sebutkan nama jalan atau kecamatannya saja.
     """
     
-    # Memanggil model Gemini 2.0 Flash
+    # Memanggil model Gemini 3.1 Flash Lite
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-3.1-flash-lite',
         contents=prompt_konteks,
     )
     
