@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str = "tobaguide-index"
     OPENAI_API_KEY: Optional[str] = None
     COHERE_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

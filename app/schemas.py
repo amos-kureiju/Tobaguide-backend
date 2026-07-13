@@ -26,7 +26,14 @@ class DestinasiResponse(DestinasiBase):
     class Config:
         from_attributes = True
 
+# Skema permintaan untuk AI Chatbot
+class ChatRequest(BaseModel):
+    user_query: str
+    fair_route_data: dict
+
+
 # Skema khusus untuk merespons rute pintar yang adil
 class TobaRouteResponse(BaseModel):
     destinasi_utama: List[DestinasiResponse]
     rekomendasi_umkm_sekitar: List[DestinasiResponse]
+    ai_response: Optional[str] = None
