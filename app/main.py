@@ -13,6 +13,7 @@ app = FastAPI(title="TobaRoute AI: Backend Keadilan Data")
 # Endpoint Baru: Mengambil rekomendasi rute yang adil bagi UMKM berbasis RAG Semantik
 @app.get("/api/route/fair-recommendation", response_model=schemas.TobaRouteResponse)
 def get_fair_travel_route(query: str, kecamatan: Optional[str] = None, db: Session = Depends(get_db)):
+    print(f"\n[DIAGNOSTIC] Endpoint /api/route/fair-recommendation dipanggil dengan query: {query}, kecamatan: {kecamatan}")
     if not query:
         raise HTTPException(status_code=400, detail="Parameter query (keinginan wisata) harus diisi")
     

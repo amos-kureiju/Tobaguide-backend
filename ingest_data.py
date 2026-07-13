@@ -3,6 +3,9 @@ import sys
 import pandas as pd
 import requests
 import json
+import time
+import random
+from geopy.geocoders import Nominatim
 
 # Hindari error encoding Unicode pada konsol Windows
 sys.stdout.reconfigure(encoding='utf-8')
@@ -34,6 +37,59 @@ def ekstrak_kecamatan(alamat_teks):
             return kec
     return "Toba"
 
+# Geolocator Nominatim (OpenStreetMap)
+geolocator = Nominatim(user_agent="tobaroute_data_agent_amos")
+
+def ambil_koordinat_default(kecamatan):
+    # Titik acuan utama per kecamatan sebagai cadangan keamanan data (Kelompok C / Fallback)
+    koordinat_pusat = {
+        "Balige": (2.3333, 99.0667),
+        "Pangururan": (2.6000, 98.7000),
+        "Laguboti": (2.3833, 99.1333),
+        "Muara": (2.3167, 98.9333),
+        "Porsea": (2.4500, 99.1333),
+        "Silaen": (2.3167, 99.1833),
+        "Toba": (2.3300, 99.0600)
+    }
+    
+    # Ambil koordinat pusat kecamatan, fallback ke Toba jika tidak terdaftar
+    kecamatan_clean = str(kecamatan).strip().title()
+    base_coords = koordinat_pusat.get(kecamatan_clean, koordinat_pusat["Toba"])
+    
+    # Tambahkan jitter acak kecil agar pin tidak bertumpuk di koordinat yang sama persis
+    lat_jitter = base_coords[0] + random.uniform(-0.005, 0.005)
+    lon_jitter = base_coords[1] + random.uniform(-0.005, 0.005)
+    return lat_jitter, lon_jitter
+
+def dapatkan_koordinat(alamat, kecamatan_default):
+    alamat_str = str(alamat).strip()
+    
+    # Deteksi Kelompok C: Alamat kosong, terlalu pendek, atau data rusak/missing (Humbang Hasundutan)
+    if pd.isna(alamat) or len(alamat_str) < 5 or "Humbang Hasundutan".lower() in alamat_str.lower():
+        print(f"   [GEOCODE - KELOMPOK C] Alamat kosong/rusak. Gunakan default: {alamat_str[:30]}...")
+        return ambil_koordinat_default(kecamatan_default)
+    
+    try:
+        # Batasi query 1 request per detik agar tidak diblokir OSM
+        time.sleep(1)
+        # Proses pencarian untuk Kelompok A & B
+        lokasi = geolocator.geocode(f"{alamat_str}, Toba, Sumatera Utara")
+        if lokasi:
+            print(f"   [GEOCODE - KELOMPOK A/B] Ditemukan: {alamat_str[:30]}... -> Lat: {lokasi.latitude:.5f}, Lon: {lokasi.longitude:.5f}")
+            return lokasi.latitude, lokasi.longitude
+        else:
+            # Jika pencarian spesifik gagal, cari berdasarkan nama kecamatannya saja
+            time.sleep(1)
+            lokasi_alt = geolocator.geocode(f"{kecamatan_default}, Toba, Sumatera Utara")
+            if lokasi_alt:
+                print(f"   [GEOCODE - FALLBACK B] Kecamatan: {kecamatan_default} -> Lat: {lokasi_alt.latitude:.5f}, Lon: {lokasi_alt.longitude:.5f}")
+                return lokasi_alt.latitude, lokasi_alt.longitude
+    except Exception as e:
+        print(f"   [GEOCODE - ERROR] Gagal mencari {alamat_str[:30]}...: {e}")
+        return ambil_koordinat_default(kecamatan_default)
+        
+    return ambil_koordinat_default(kecamatan_default)
+
 # ==============================================================================
 # FUNGSI 1: INGEST TEMPAT WISATA
 # ==============================================================================
@@ -55,13 +111,13 @@ def ingest_wisata():
             rating_clean = 0.0
 
         deskripsi_gabungan = f"Fasilitas: {row.get('addons', '-')}. Ulasan Awal: {row.get('review', '-')}"
+        nama_tempat = str(row.get('place', 'Destinasi Wisata'))
         
-        # Koordinat dummy spasial Danau Toba
-        latitude = 2.33 + (index * 0.005) 
-        longitude = 99.06 + (index * 0.005)
+        # Koordinat riil dengan Geopy & Fallback
+        latitude, longitude = dapatkan_koordinat(row.get('add', 'Kawasan Danau Toba'), kecamatan)
 
         payload = {
-            "nama": str(row.get('place', 'Destinasi Wisata')),
+            "nama": nama_tempat,
             "kategori": "wisata",
             "kecamatan": kecamatan,
             "gambar_url": str(row.get('gambar_url')) if pd.notna(row.get('gambar_url')) else "https://images.unsplash.com/photo-1572252009286-268acec5ca0a",
@@ -95,15 +151,14 @@ def ingest_kuliner():
             desc = str(row.get('description', 'Makanan khas lokal Danau Toba'))
             kecamatan = ekstrak_kecamatan(desc)
             
-            # Simulasi koordinat dan rating rendah ulasan (<15 ulasan, rating > 4.0)
-            # Ini sangat krusial untuk melatih algoritma Fairness AI (Keadilan Data) Anda!
-            latitude = 2.34 + (index * 0.003)
-            longitude = 99.07 + (index * 0.003)
+            # Koordinat riil dengan Geopy & Fallback
+            nama_kuliner = str(row.get('kuliner-name', 'Kuliner Lokal'))
+            latitude, longitude = dapatkan_koordinat(row.get('description', 'Kawasan Toba'), kecamatan)
             rating = 4.2 if (index % 2 == 0) else 4.5
             jumlah_ulasan = 5 if (index % 2 == 0) else 8 # Di bawah 15 ulasan
 
             payload = {
-                "nama": str(row.get('kuliner-name', 'Kuliner Lokal')),
+                "nama": nama_kuliner,
                 "kategori": "kuliner",
                 "kecamatan": kecamatan,
                 "gambar_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
@@ -142,16 +197,19 @@ def ingest_kuliner():
                 # Simulasi ulasan sedikit untuk Fairness test (ulasan < 15)
                 jumlah_ulasan = 6 if (index % 2 == 0) else 12
 
+                nama_resto = str(row.get('place', 'Resto Lokal'))
+                latitude, longitude = dapatkan_koordinat(row.get('add', 'Kawasan Toba'), kecamatan)
+
                 payload = {
-                    "nama": str(row.get('place', 'Resto Lokal')),
+                    "nama": nama_resto,
                     "kategori": "kuliner",
                     "kecamatan": kecamatan,
                     "gambar_url": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5",
                     "deskripsi_singkat": f"Tempat kuliner tipe {row.get('type', 'Rumah Makan')} dengan menu khas Danau Toba.",
                     "deskripsi_lengkap": f"Fasilitas: {row.get('facilitates', '-')}. Ulasan: {row.get('review', '-')}",
                     "nama_jalan": str(row.get('add', 'Kawasan Toba')),
-                    "latitude": 2.32 + (index * 0.002),
-                    "longitude": 99.05 + (index * 0.002),
+                    "latitude": latitude,
+                    "longitude": longitude,
                     "rating": rating_clean,
                     "jumlah_ulasan": jumlah_ulasan
                 }
@@ -180,13 +238,13 @@ def ingest_transportasi():
         kecamatan = ekstrak_kecamatan(arah)
         
         desc = f"Jenis Mobil: {row.get('jenis-mobil', 'Umum')}. Jam Operasional: {row.get('operational-hour', '-')}. Detail: {row.get('description', '-')}"
+        nama_transport = str(row.get('transport-name', 'Transportasi Lokal'))
         
-        # Koordinat dummy
-        latitude = 2.35 + (index * 0.004)
-        longitude = 99.08 + (index * 0.004)
+        # Koordinat riil dengan Geopy & Fallback
+        latitude, longitude = dapatkan_koordinat(arah, kecamatan)
 
         payload = {
-            "nama": str(row.get('transport-name', 'Transportasi Lokal')),
+            "nama": nama_transport,
             "kategori": "umkm", # Kita masukkan ke kategori 'umkm' agar adil bagi pengemudi lokal
             "kecamatan": kecamatan,
             "gambar_url": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2",
