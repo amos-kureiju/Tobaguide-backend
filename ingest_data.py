@@ -10,16 +10,11 @@ from geopy.geocoders import Nominatim
 # Hindari error encoding Unicode pada konsol Windows
 sys.stdout.reconfigure(encoding='utf-8')
 
-# 1. Tentukan path file Excel (bisa di folder local atau di folder Downloads)
-FILE_PATH = "dataset/Dataset HackathonTourism - IT DEL.xlsx"
-DOWNLOADS_PATH = r"C:\Users\amosb\Downloads\Dataset HackathonTourism - IT DEL.xlsx"
+# 1. Tentukan path file Excel di dalam folder proyek (relative path)
+EXCEL_FILE = "dataset/Dataset HackathonTourism - IT DEL.xlsx"
 
-if os.path.exists(FILE_PATH):
-    EXCEL_FILE = FILE_PATH
-elif os.path.exists(DOWNLOADS_PATH):
-    EXCEL_FILE = DOWNLOADS_PATH
-else:
-    raise FileNotFoundError("Dataset HackathonTourism - IT DEL.xlsx tidak ditemukan di folder dataset/ maupun folder Downloads.")
+if not os.path.exists(EXCEL_FILE):
+    raise FileNotFoundError("Berkas 'dataset/Dataset HackathonTourism - IT DEL.xlsx' tidak ditemukan. Pastikan Anda sudah melakukan git pull.")
 
 # 2. URL Endpoint FastAPI
 API_URL = "http://127.0.0.1:8080/api/admin/destinasi"
