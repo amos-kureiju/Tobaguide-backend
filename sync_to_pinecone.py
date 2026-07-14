@@ -37,24 +37,24 @@ def get_embedding_model_info():
     elif COHERE_API_KEY and not COHERE_API_KEY.startswith("cohere-placeholder"):
         return "cohere", "embed-multilingual-v3.0", 1024
     else:
-        print("❌ Error: Tidak ditemukan API Key OpenAI atau Cohere yang valid di file .env")
+        print("[ERROR] Tidak ditemukan API Key OpenAI atau Cohere yang valid di file .env")
         sys.exit(1)
 
-def generate_embedding(provider, model_name, text, openai_client, cohere_client):
-    """Menghasilkan vektor embedding untuk teks masukan"""
+def generate_embeddings_batch(provider, model_name, texts, openai_client, cohere_client):
+    """Menghasilkan vektor embedding untuk satu batch teks masukan"""
     if provider == "openai":
         response = openai_client.embeddings.create(
-            input=[text],
+            input=texts,
             model=model_name
         )
-        return response.data[0].embedding
+        return [item.embedding for item in response.data]
     elif provider == "cohere":
         response = cohere_client.embed(
-            texts=[text],
+            texts=texts,
             model=model_name,
             input_type="search_document"
         )
-        return response.embeddings[0]
+        return response.embeddings
     return []
 
 def main():
@@ -62,11 +62,11 @@ def main():
     
     # 1. Validasi API Key Pinecone
     if not PINECONE_API_KEY:
-        print("❌ Error: PINECONE_API_KEY tidak ditemukan di .env")
+        print("[ERROR] PINECONE_API_KEY tidak ditemukan di .env")
         sys.exit(1)
         
     provider, model_name, dimension = get_embedding_model_info()
-    print(f"ℹ️ Provider Embedding: {provider.upper()} ({model_name}) | Dimensi Vektor: {dimension}")
+    print(f"[INFO] Provider Embedding: {provider.upper()} ({model_name}) | Dimensi Vektor: {dimension}")
     
     # 2. Inisialisasi AI Clients
     openai_client = OpenAI(api_key=OPENAI_API_KEY) if provider == "openai" else None
@@ -79,7 +79,7 @@ def main():
     existing_indexes = [index.name for index in pc.list_indexes()]
     
     if PINECONE_INDEX_NAME not in existing_indexes:
-        print(f"ℹ️ Indeks '{PINECONE_INDEX_NAME}' tidak ditemukan. Membuat indeks baru...")
+        print(f"[INFO] Indeks '{PINECONE_INDEX_NAME}' tidak ditemukan. Membuat indeks baru...")
         try:
             pc.create_index(
                 name=PINECONE_INDEX_NAME,
@@ -90,14 +90,14 @@ def main():
                     region="us-east-1"
                 )
             )
-            print(f"✅ Indeks '{PINECONE_INDEX_NAME}' berhasil dibuat! Menunggu inisialisasi...")
+            print(f"[OK] Indeks '{PINECONE_INDEX_NAME}' berhasil dibuat! Menunggu inisialisasi...")
             # Menunggu beberapa detik agar indeks aktif
             time.sleep(8)
         except Exception as e:
-            print(f"❌ Gagal membuat indeks Pinecone: {e}")
+            print(f"[ERROR] Gagal membuat indeks Pinecone: {e}")
             sys.exit(1)
     else:
-        print(f"✅ Indeks '{PINECONE_INDEX_NAME}' terdeteksi dan aktif.")
+        print(f"[OK] Indeks '{PINECONE_INDEX_NAME}' terdeteksi dan aktif.")
         
     index = pc.Index(PINECONE_INDEX_NAME)
     
@@ -108,59 +108,67 @@ def main():
         print(f"Menarik {len(destinasis)} destinasi dari PostgreSQL...")
         
         if not destinasis:
-            print("⚠️ Database kosong. Silakan jalankan 'ingest_data.py' terlebih dahulu.")
+            print("[WARN] Database kosong. Silakan jalankan 'ingest_data.py' terlebih dahulu.")
             return
             
-        # 5. Proses Embedding & Unggah ke Pinecone
+        # 5. Proses Embedding dalam Batch
         vectors_to_upsert = []
-        for d in destinasis:
-            # Konstruksi teks semantik untuk di-embed
-            semantik_text = (
-                f"Nama: {d.nama} | "
-                f"Kategori: {d.kategori} | "
-                f"Kecamatan: {d.kecamatan} | "
-                f"Deskripsi: {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} | "
-                f"Jalan: {d.nama_jalan}"
-            )
+        batch_embedding_size = 90  # Ukuran batch untuk API call Cohere/OpenAI (Max 96)
+        
+        print("\nMulai menghasilkan embedding secara berkelompok...")
+        for idx in range(0, len(destinasis), batch_embedding_size):
+            batch_items = destinasis[idx:idx + batch_embedding_size]
+            batch_texts = []
+            
+            for d in batch_items:
+                semantik_text = (
+                    f"Nama: {d.nama} | "
+                    f"Kategori: {d.kategori} | "
+                    f"Kecamatan: {d.kecamatan} | "
+                    f"Deskripsi: {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} | "
+                    f"Jalan: {d.nama_jalan}"
+                )
+                batch_texts.append(semantik_text)
             
             try:
-                # Dapatkan representasi vektor
-                vector_values = generate_embedding(provider, model_name, semantik_text, openai_client, cohere_client)
+                # Panggil API sekali saja untuk seluruh batch
+                embeddings = generate_embeddings_batch(provider, model_name, batch_texts, openai_client, cohere_client)
                 
-                if vector_values:
-                    # Siapkan payload vektor dan metadata
+                # Petakan kembali vektor ke objek destinasi
+                for item, vector_values in zip(batch_items, embeddings):
                     vectors_to_upsert.append({
-                        "id": str(d.id),
+                        "id": str(item.id),
                         "values": vector_values,
                         "metadata": {
-                            "nama": d.nama,
-                            "kategori": d.kategori,
-                            "kecamatan": d.kecamatan,
-                            "deskripsi_singkat": d.deskripsi_singkat,
-                            "nama_jalan": d.nama_jalan
+                            "nama": item.nama,
+                            "kategori": item.kategori,
+                            "kecamatan": item.kecamatan,
+                            "deskripsi_singkat": item.deskripsi_singkat,
+                            "nama_jalan": item.nama_jalan
                         }
                     })
-                    print(f" -> Generated embedding for: {d.nama}")
                 
-                # Batasi request rate jika menggunakan free tier cohere
-                if provider == "cohere":
-                    time.sleep(0.5)
+                print(f" -> Berhasil membuat embedding batch: {len(vectors_to_upsert)} / {len(destinasis)} data.")
+                
+                # Jeda sejenak untuk mematuhi rate limit rate API trial key
+                time.sleep(2)
+                
             except Exception as e:
-                print(f"❌ Gagal membuat embedding untuk {d.nama}: {e}")
+                print(f"[ERROR] Gagal memproses batch dari index {idx} ke {idx + len(batch_items)}: {e}")
                 
         # 6. Unggah dalam Batch ke Pinecone
         if vectors_to_upsert:
             print(f"\nMengunggah {len(vectors_to_upsert)} vektor ke Pinecone...")
-            # Bagi menjadi batch-batch kecil berukuran 50 vektor
-            batch_size = 50
-            for i in range(0, len(vectors_to_upsert), batch_size):
-                batch = vectors_to_upsert[i:i + batch_size]
+            # Bagi menjadi batch-batch kecil berukuran 50 vektor untuk upsert Pinecone
+            pinecone_batch_size = 50
+            for i in range(0, len(vectors_to_upsert), pinecone_batch_size):
+                batch = vectors_to_upsert[i:i + pinecone_batch_size]
                 index.upsert(vectors=batch)
-                print(f" ✅ Berhasil mengunggah batch {i//batch_size + 1} ({len(batch)} data)")
+                print(f" [OK] Berhasil mengunggah batch {i//pinecone_batch_size + 1} ({len(batch)} data)")
             
-            print("\n🎉 Sinkronisasi seluruh data ke Pinecone berhasil diselesaikan!")
+            print("\n[SUCCESS] Sinkronisasi seluruh data ke Pinecone berhasil diselesaikan!")
         else:
-            print("⚠️ Tidak ada vektor yang siap diunggah.")
+            print("[WARN] Tidak ada vektor yang siap diunggah.")
             
     finally:
         db.close()
