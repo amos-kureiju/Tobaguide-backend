@@ -11,7 +11,7 @@ from geopy.geocoders import Nominatim
 sys.stdout.reconfigure(encoding='utf-8')
 
 # 1. Tentukan path file Excel (bisa di folder local atau di folder Downloads)
-FILE_PATH = "Dataset HackathonTourism - IT DEL.xlsx"
+FILE_PATH = "dataset/Dataset HackathonTourism - IT DEL.xlsx"
 DOWNLOADS_PATH = r"C:\Users\amosb\Downloads\Dataset HackathonTourism - IT DEL.xlsx"
 
 if os.path.exists(FILE_PATH):
@@ -19,10 +19,10 @@ if os.path.exists(FILE_PATH):
 elif os.path.exists(DOWNLOADS_PATH):
     EXCEL_FILE = DOWNLOADS_PATH
 else:
-    raise FileNotFoundError("Dataset HackathonTourism - IT DEL.xlsx tidak ditemukan di root maupun folder Downloads.")
+    raise FileNotFoundError("Dataset HackathonTourism - IT DEL.xlsx tidak ditemukan di folder dataset/ maupun folder Downloads.")
 
 # 2. URL Endpoint FastAPI
-API_URL = "http://127.0.0.1:8001/api/admin/destinasi"
+API_URL = "http://127.0.0.1:8080/api/admin/destinasi"
 
 # Buka file excel untuk membaca sheet-sheetnya
 xl = pd.ExcelFile(EXCEL_FILE)
