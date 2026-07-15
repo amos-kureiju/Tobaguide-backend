@@ -49,6 +49,9 @@ def get_fair_route(db: Session, kecamatan: str, limit_utama: int = 3):
         "rekomendasi_umkm_sekitar": umkm_sekitar
     }
 
+# ==============================================================================
+# INTEGRASI RAG & VECTOR DATABASE (PINECONE)
+# ==============================================================================
 from pinecone import Pinecone  # type: ignore
 from openai import OpenAI  # type: ignore
 from app.config import settings
@@ -64,7 +67,8 @@ def get_pinecone_index():
 
 def get_cohere_embedding(query_user: str):
     try:
-        from cohere import Client  # type: ignore
+        # pyrefly: ignore [missing-import]
+        from cohere import Client
         co = Client(api_key=settings.COHERE_API_KEY)
         res = co.embed(texts=[query_user], model="embed-multilingual-v3.0", input_type="search_query")
         return res.embeddings[0]

@@ -1,64 +1,91 @@
-# TobaGuide Backend API
+# TobaRoute AI Monorepo
 
-A clean, modular FastAPI backend structure for the TobaGuide project.
+Repositori ini menggabungkan sistem backend (FastAPI) dan frontend (React + Vite) untuk aplikasi panduan pariwisata Danau Toba yang adil bagi UMKM berbasis RAG Semantik.
 
-## Directory Structure
+## 📂 Struktur Proyek
+- `/backend`: Berisi logika backend FastAPI, model database, skrip ingestion, dan virtual environment.
+- `/frontend`: Berisi antarmuka pengguna berbasis React, Vite, dan Vanilla CSS.
 
-```
-tobaguide-backend/
-├── app/
-│   ├── __init__.py
-│   ├── main.py          # Titik masuk utama aplikasi FastAPI (routes & middleware)
-│   ├── config.py        # Konfigurasi database dan environment variables
-│   ├── database.py      # Koneksi SQLAlchemy ke PostgreSQL
-│   ├── models.py        # Struktur tabel database (SQLAlchemy)
-│   ├── schemas.py       # Validasi data masuk/keluar (Pydantic)
-│   └── crud.py          # Operasi database (Create, Read, Update, Delete)
-├── .env.example             # Template variabel environment
-├── .env                     # Variabel environment lokal (jangan dicommit)
-├── .gitignore               # Daftar folder & file yang diabaikan Git
-└── requirements.txt         # Kebutuhan package Python
-```
+---
 
-## Setup & Running Instructions
+## 🛠️ Cara Memasang & Menjalankan di Laptop Anda
 
-### 1. Prasyarat (Prerequisites)
-Pastikan Anda sudah menginstal Python 3.10+ dan PostgreSQL di sistem Anda.
-
-### 2. Setup Virtual Environment
-Buka terminal/command prompt di direktori project `tobaguide-backend` lalu jalankan:
-
+### Langkah 1: Kloning Repositori
+Jika Anda baru pertama kali mengambil proyek ini, kloning repositori ini ke komputer Anda:
 ```bash
-# Membuat virtual environment
-python -m venv venv
-
-# Aktivasi virtual environment (Windows)
-venv\Scripts\activate
-
-# Aktivasi virtual environment (Mac/Linux)
-source venv/bin/activate
+git clone https://github.com/amos-kureiju/Tobaguide-backend.git tobaguide
+cd tobaguide
 ```
 
-### 3. Install Dependencies
-Instal library yang dibutuhkan menggunakan pip:
+---
 
-```bash
-pip install -r requirements.txt
-```
+### Langkah 2: Setup Backend (FastAPI)
 
-### 4. Konfigurasi Environment
-Salin file `.env.example` menjadi `.env` lalu sesuaikan kredensial database PostgreSQL Anda:
+1. Pindah ke direktori backend:
+   ```bash
+   cd backend
+   ```
 
-```ini
-DATABASE_URL="postgresql://postgres:username_db_anda@localhost:5432/nama_db_anda"
-```
+2. Buat Virtual Environment baru:
+   ```bash
+   python -m venv venv
+   ```
 
-### 5. Jalankan Aplikasi
-Jalankan server pengembangan Uvicorn:
+3. Aktifkan Virtual Environment:
+   - **Windows (PowerShell):**
+     ```powershell
+     .\venv\Scripts\Activate.ps1
+     ```
+   - **Windows (Command Prompt):**
+     ```cmd
+     .\venv\Scripts\activate.bat
+     ```
+   - **macOS / Linux:**
+     ```bash
+     source venv/bin/activate
+     ```
 
-```bash
-uvicorn app.main:app --reload
-```
+4. Pasang Dependensi Python:
+   ```bash
+   pip install -r requirements.txt
+   pip install pinecone-client cohere openai pandas openpyxl
+   ```
 
-Server akan berjalan secara default di `http://127.0.0.1:8000`. 
-Anda bisa membuka dokumentasi API interaktif (Swagger UI) di `http://127.0.0.1:8000/docs`.
+5. Konfigurasi file `.env`:
+   Salin file `.env.example` menjadi `.env` lalu lengkapi isinya (seperti Database URL, API Keys Gemini, Cohere, Pinecone, dll.):
+   ```bash
+   copy .env.example .env
+   ```
+
+6. Jalankan Server Backend:
+   ```bash
+   uvicorn app.main:app --port 8080 --reload
+   ```
+   *Backend akan berjalan di: `http://localhost:8080`*
+
+---
+
+### Langkah 3: Setup Frontend (React + Vite)
+
+1. Buka terminal baru dan masuk ke direktori frontend:
+   ```bash
+   cd frontend
+   ```
+
+2. Pasang Dependensi Node.js:
+   ```bash
+   npm install
+   ```
+
+3. Jalankan Server Frontend:
+   ```bash
+   npm run dev
+   ```
+   *Frontend akan berjalan di: `http://localhost:5173`*
+
+---
+
+### 🌐 Akses Aplikasi:
+Buka browser Anda dan buka alamat:
+- **Web App:** [http://localhost:5173](http://localhost:5173)
+- **API Docs (Swagger UI):** [http://localhost:8080/docs](http://localhost:8080/docs)
