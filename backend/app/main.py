@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from .database import engine, Base, get_db
@@ -9,6 +10,15 @@ from .ai_bot import generate_tourist_response
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="TobaRoute AI: Backend Keadilan Data")
+
+# CORS middleware configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Endpoint Baru: Mengambil rekomendasi rute yang adil bagi UMKM berbasis RAG Semantik
 @app.get("/api/route/fair-recommendation", response_model=schemas.TobaRouteResponse)
