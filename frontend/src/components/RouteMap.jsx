@@ -1,8 +1,9 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Navigation, Star } from 'lucide-react';
+import RoutingMachine from './RoutingMachine';
 
 const wisataIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
@@ -36,7 +37,7 @@ const RouteMap = ({ destinasiUtama, umkmSekitar }) => {
     ? [validDestinasi[0].latitude, validDestinasi[0].longitude] 
     : (validUmkm.length > 0 ? [validUmkm[0].latitude, validUmkm[0].longitude] : [2.6105, 98.8106]);
 
-  // Ekstrak koordinat untuk rute (Polyline) dari destinasi utama
+  // Ekstrak koordinat untuk rute dari destinasi utama
   const routeCoordinates = validDestinasi.map(d => [d.latitude, d.longitude]);
 
   return (
@@ -51,15 +52,9 @@ const RouteMap = ({ destinasiUtama, umkmSekitar }) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {/* Draw Polyline untuk rute Destinasi Utama */}
+        {/* Routing Asli Mengikuti Jalan */}
         {routeCoordinates.length > 1 && (
-          <Polyline 
-            positions={routeCoordinates} 
-            color="#0ea5e9" 
-            weight={4} 
-            dashArray="10, 10" 
-            opacity={0.8}
-          />
+          <RoutingMachine waypoints={routeCoordinates} />
         )}
 
         {/* Marker Destinasi Utama */}

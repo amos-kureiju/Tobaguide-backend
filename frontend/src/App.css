@@ -289,3 +289,8 @@
   padding: 2rem;
   margin-top: auto;
 }
+
+/* Sembunyikan instruksi rute default dari leaflet-routing-machine karena kita cuma butuh rutenya */
+.leaflet-routing-container {
+  display: none !important;
+}
