@@ -37,3 +37,11 @@ class TobaRouteResponse(BaseModel):
     destinasi_utama: List[DestinasiResponse]
     rekomendasi_umkm_sekitar: List[DestinasiResponse]
     ai_response: Optional[str] = None
+
+class ChatbotMessage(BaseModel):
+    role: str
+    text: str
+
+class ChatbotRequest(BaseModel):
+    message: str
+    history: List[ChatbotMessage] = []

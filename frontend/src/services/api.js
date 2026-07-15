@@ -36,3 +36,13 @@ export const getDestinations = async (kecamatan = '', limit = 10) => {
     throw error;
   }
 };
+
+export const sendChatMessage = async (message, history = []) => {
+  try {
+    const response = await apiClient.post('/chat', { message, history });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    throw error;
+  }
+};

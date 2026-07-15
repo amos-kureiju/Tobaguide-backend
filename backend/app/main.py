@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from .database import engine, Base, get_db
 from . import crud, schemas
-from .ai_bot import generate_tourist_response
+from .ai_bot import generate_tourist_response, chat_with_bot
 
 # Otomatis membuat tabel di PostgreSQL saat aplikasi backend dinyalakan
 Base.metadata.create_all(bind=engine)
@@ -42,6 +42,13 @@ def get_fair_travel_route(query: str, kecamatan: Optional[str] = None, db: Sessi
         "rekomendasi_umkm_sekitar": route_data["rekomendasi_umkm_sekitar"],
         "ai_response": ai_response
     }
+
+# Endpoint Baru: Chatbot Interaktif
+@app.post("/api/chat")
+def interactive_chat(request: schemas.ChatbotRequest):
+    history_dicts = [{"role": msg.role, "text": msg.text} for msg in request.history]
+    ai_reply = chat_with_bot(request.message, history_dicts)
+    return {"reply": ai_reply}
 
 # Endpoint untuk User & Admin: Mengambil daftar destinasi pariwisata
 @app.get("/api/destinasi", response_model=List[schemas.DestinasiResponse])

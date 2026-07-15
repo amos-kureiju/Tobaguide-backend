@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Map, Sparkles, AlertCircle } from 'lucide-react';
 import { getFairRecommendation } from '../services/api';
 import DestinationCard from '../components/DestinationCard';
+import RouteMap from '../components/RouteMap';
 import ReactMarkdown from 'react-markdown';
 
 const Home = () => {
@@ -99,7 +100,7 @@ const Home = () => {
 
         {results && !loading && (
           <div className="results-container fade-in">
-            {/* AI Response */}
+            {/* AI Response & Route Map */}
             <section className="ai-response glass-panel">
               <div className="ai-header">
                 <Sparkles size={24} color="var(--color-primary)" />
@@ -108,6 +109,8 @@ const Home = () => {
               <div className="ai-body">
                 <ReactMarkdown>{results.ai_response}</ReactMarkdown>
               </div>
+              {/* Route Map */}
+              <RouteMap destinasiUtama={results.destinasi_utama} umkmSekitar={results.rekomendasi_umkm_sekitar} />
             </section>
 
             {/* Destinations */}

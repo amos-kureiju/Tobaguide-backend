@@ -41,3 +41,35 @@ def generate_tourist_response(user_query: str, fair_route_data: dict) -> str:
     )
     
     return response.text
+
+def chat_with_bot(user_message: str, history: list) -> str:
+    """
+    Fungsi untuk ngobrol secara interaktif (Chatbot).
+    """
+    system_instruction = (
+        "Anda adalah TobaRoute AI, asisten pemandu wisata Danau Toba yang ramah, hangat, dan sangat berpengetahuan luas. "
+        "Selalu berikan saran yang menonjolkan UMKM lokal dan keadilan pariwisata. Jawab dalam bahasa Indonesia yang natural."
+    )
+    
+    # Konversi history ke format yang diharapkan Gemini (genai.types.Content)
+    contents = [{"role": "user", "parts": [{"text": system_instruction}]}]
+    
+    # Gemini requires alternating roles (user, model). We inject system instruction as user.
+    # To keep it simple, we just format the history as a single prompt context.
+    
+    chat_history_text = system_instruction + "\n\n"
+    for msg in history:
+        role_name = "Wisatawan" if msg["role"] == "user" else "TobaRoute AI"
+        chat_history_text += f"{role_name}: {msg['text']}\n"
+    
+    chat_history_text += f"Wisatawan: {user_message}\nTobaRoute AI:"
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-3.1-flash-lite',
+            contents=chat_history_text,
+        )
+        return response.text
+    except Exception as e:
+        print(f"Error in chat_with_bot: {e}")
+        return "Mohon maaf, saat ini sistem AI sedang sibuk. Silakan coba beberapa saat lagi."

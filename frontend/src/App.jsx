@@ -4,6 +4,7 @@ import { Compass } from 'lucide-react';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import About from './pages/About';
+import Chatbot from './components/Chatbot';
 import './App.css';
 
 function App() {
@@ -51,6 +52,9 @@ function App() {
         <footer className="footer">
           <p>&copy; 2026 TobaRoute AI. Dibangun untuk mendukung Keadilan Pariwisata Danau Toba.</p>
         </footer>
+
+        {/* Global Chatbot */}
+        <Chatbot />
       </div>
     </Router>
   );
