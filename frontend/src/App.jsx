@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Map, Sparkles, AlertCircle, Compass } from 'lucide-react';
 import { getFairRecommendation } from './services/api';
 import DestinationCard from './components/DestinationCard';
+import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 function App() {
@@ -121,9 +122,7 @@ function App() {
                 <h3>Saran Perjalanan dari AI</h3>
               </div>
               <div className="ai-body">
-                {results.ai_response.split('\\n').map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
-                ))}
+                <ReactMarkdown>{results.ai_response}</ReactMarkdown>
               </div>
             </section>
 

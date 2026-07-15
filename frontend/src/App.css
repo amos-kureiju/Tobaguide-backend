@@ -202,10 +202,32 @@
 
 .ai-body p {
   margin-bottom: 1rem;
+  line-height: 1.6;
 }
 
 .ai-body p:last-child {
   margin-bottom: 0;
+}
+
+.ai-body h1, .ai-body h2, .ai-body h3 {
+  color: var(--color-primary-dark);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ai-body ul, .ai-body ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.ai-body li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.ai-body strong {
+  color: var(--color-text-main);
+  font-weight: 600;
 }
 
 /* Sections */
